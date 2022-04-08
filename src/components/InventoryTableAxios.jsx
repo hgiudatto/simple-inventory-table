@@ -1,27 +1,34 @@
-import { useState, useEffect, Fragment } from "react";
+import React, { useState, useEffect, Fragment } from "react";
+import axios from "axios";
 
-const API_HOST = "http://localhost:3000";
-const INVENTORY_API_URL = "${API_HOST}/inventory";
+const baseURL = `http://localhost:3000/inventory`;
+const client = axios.create({
+  baseURL: `http://localhost:3000/inventory`,
+});
 
-const InventoryTable = () => {
-  const [data, setData] = useState([]);
+const InventoryTableAxios = () => {
+  const [post, setPost] = useState();
 
-  const fetchInventory = () => {
-    fetch(`http://localhost:3000/inventory`, {
-      method: "get",
-      headers: new Headers({ test: "test" }),
-    })
-      .then((res) => res.json())
-      /* .then((json) => setData(json)); */
-      .then((result) => {
-        console.log(result);
-        setData(result);
-      });
+  const retrieveInventory = () => {
+    axios.get(baseURL).then((response) => {
+      setPost(response.data);
+    });
   };
 
-  useEffect(() => {
-    fetchInventory();
-  }, []);
+  const updateInventory = (id, newUnitPrice) => {
+    /* const res = await client.patch({ id: id, unit_price: newUnitPrice }); */
+    console.log("id to be updated: ", id);
+    axios
+      .put(`http://localhost:3000/inventory/1`, {
+        product_name: "Creamiest Shaving Foam",
+        product_category: "Toiletries",
+        unit_price: newUnitPrice
+      })
+      .then((response) => {
+        onCancel();
+        retrieveInventory();
+      });
+  };
 
   const [inEditMode, setInEditMode] = useState({
     status: false,
@@ -31,46 +38,30 @@ const InventoryTable = () => {
   const [unitPrice, setUnitPrice] = useState(null);
 
   const onEdit = ({ id, currentUnitPrice }) => {
-    setInEditMode({
-      status: true,
-      rowKey: id,
-    })
+    setInEditMode({ status: true, rowKey: id });
     setUnitPrice(currentUnitPrice);
   };
 
-  const updateInventory = ({ id, newUnitPrice }) => {
-    console.log("id to patch: ", id, " the new unit price: ", newUnitPrice); 
-
-    fetch(`http://localhost:3000/inventory/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify({ unit_price: newUnitPrice }),
-      headers: {
-        "Content-Type": "application/json; charset=UTF-8",
-      },
-    })
-      .then((response) => response.json())
-      .then((json) => {
-        console.log("Inventory after PATCH", json);
-        onCancel();
-        fetchInventory();
-      });
+  const onCancel = () => {
+    setInEditMode({ status: false, rowKey: null });
+    setUnitPrice(null);
   };
 
   const onSave = ({ id, newUnitPrice }) => {
     updateInventory({ id, newUnitPrice });
   };
 
-  const onCancel = () => {
-    setInEditMode({
-      status: false,
-      rowKey: null,
-    });
-    setUnitPrice(null);
-  };
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    retrieveInventory();
+  }, []);
+
+  if (!post) return null;
 
   return (
     <div className="container">
-      <h1>Simple Inventory Table</h1>
+      <h1>Simple Inventory Table (Axios)</h1>
       <table>
         <thead>
           <tr>
@@ -81,7 +72,7 @@ const InventoryTable = () => {
           </tr>
         </thead>
         <tbody>
-          {data.map((item) => (
+          {post.map((item) => (
             <tr key={item.id}>
               <td>{item.product_name}</td>
               <td>{item.product_category}</td>
@@ -100,9 +91,9 @@ const InventoryTable = () => {
                   <Fragment>
                     <button
                       className={"btn-success"}
-                      onClick={() =>
-                        onSave({ id: item.id, newUnitPrice: unitPrice })
-                      }
+                      onClick={() => {
+                        onSave({ id: item.id, newUnitPrice: unitPrice });
+                      }}
                     >
                       Save
                     </button>
@@ -133,4 +124,4 @@ const InventoryTable = () => {
   );
 };
 
-export default InventoryTable;
+export default InventoryTableAxios;
