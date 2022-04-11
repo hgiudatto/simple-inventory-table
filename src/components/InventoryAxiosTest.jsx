@@ -6,18 +6,19 @@ const baseUrl = "http://localhost:3000/inventory";
 
 const InventoryAxiosTest = () => {
   const [post, setPost] = useState(null);
+  const [postChanged, setPostChanged] = useState(false);
   const [totalPosts, setTotalPosts] = useState(null);
 
   const [editFormData, setEditFormData] = useState({
-    productName: "",
-    productCategory: "",
-    unitPrice: "",
+    product_name: "",
+    product_category: "",
+    unit_price: "",
   });
 
   const [addFormData, setAddFormData] = useState({
-    productName: "",
-    productCategory: "",
-    unitPrice: "",
+    product_name: "",
+    product_category: "",
+    unit_price: "",
   });
 
   const handleAddFormChange = (event) => {
@@ -39,9 +40,9 @@ const InventoryAxiosTest = () => {
 
     const newPost = {
       id: nanoid(),
-      productName: addFormData.productName,
-      productCategory: addFormData.productCategory,
-      unitPrice: addFormData.unitPrice,
+      product_name: addFormData.product_name,
+      product_category: addFormData.product_category,
+      unit_price: addFormData.unit_price,
     };
 
     addPost(newPost);
@@ -53,10 +54,17 @@ const InventoryAxiosTest = () => {
 
   useEffect(() => {
     axios.get(baseUrl).then((response) => {
-      console.log('Getting the posts...', response.data);
+      console.log("Getting the posts...", response.data);
       setPost(response.data);
     });
   }, []);
+
+  useEffect(() => {
+    axios.get(baseUrl).then((response) => {
+      console.log("Getting the posts...", response.data);
+      setPost(response.data);
+    });
+  }, [postChanged]);
 
   /* useEffect(() => {
     axios.get(`${baseUrl}/1`).then((response) => {
@@ -68,7 +76,7 @@ const InventoryAxiosTest = () => {
     return null;
   }
 
-  /* TODO Agregar tabla con los posts */
+  /* TODO Agregar boton de eliminar un proiducto */
 
   const createPost = () => {
     axios
@@ -85,10 +93,48 @@ const InventoryAxiosTest = () => {
   async function addPost(newPost) {
     try {
       const response = await axios.post(baseUrl, newPost);
-      console.log('POST STATUS: ', response.status);
+      console.log("POST STATUS: ", response.status);
     } catch (err) {
       console.log(err);
     }
+  }
+
+  async function updateFirstPost() {
+    try {
+      const response = await axios.put(`${baseUrl}/1`, {
+        product_name: "Waikiki Beach Soft Baby Shampoo",
+        product_category: "Tolietries",
+        unit_price: "158.17",
+      });
+      console.log("POST STATUS: ", response.status);
+      setPostChanged(true);
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async function updatePost(id) {
+    try {
+      const response = await axios.put(`${baseUrl}/${id}`, {
+        product_name: "Waikiki Beach Blue Deep-sea Sponge",
+        product_category: "Tolietries",
+        unit_price: "230",
+      });
+      console.log("POST STATUS: ", response.status);
+      setPostChanged(true);
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async function retrieveAPost(thisPost) {
+    // first retrieve this post
+    const aPost = await axios.get(`${baseUrl}`, {
+      params: { id: thisPost.id },
+    });
+
+    // second update it
+    console.log("Retrieving this post => ", aPost);
   }
 
   return (
@@ -111,35 +157,56 @@ const InventoryAxiosTest = () => {
             <tr key={prod.id}>
               <td>{prod.product_name}</td>
               <td>{prod.unit_price}</td>
+              <td>
+                <button
+                  onClick={() => {
+                    updatePost(prod.id);
+                  }}
+                >
+                  Change
+                </button>
+              </td>
+              <td>
+                <button
+                  onClick={() => {
+                    retrieveAPost(prod);
+                  }}
+                >
+                  Retrieve this post
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
       <br></br>
       <h2>Add a Product</h2>
+      <button onClick={updateFirstPost}>Update 1st post</button>
+      <button onClick={() => updatePost(2)}>Update 2nd post</button>
       <form onSubmit={handleAddFormSubmit}>
         <input
           type="text"
-          name="productName"
+          name="product_name"
           required="required"
           placeholder="Enter a name..."
           onChange={handleAddFormChange}
         />
         <input
           type="text"
-          name="productCategory"
+          name="product_category"
           required="required"
           placeholder="Enter a category..."
           onChange={handleAddFormChange}
         />
         <input
           type="text"
-          name="unitPrice"
+          name="unit_price"
           required="required"
           placeholder="Enter a price..."
           onChange={handleAddFormChange}
         />
         <button type="submit">Add</button>
+        <br></br>
       </form>
     </div>
   );
