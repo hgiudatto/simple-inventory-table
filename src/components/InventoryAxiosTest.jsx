@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Fragment } from "react";
 import axios from "axios";
 import { nanoid } from "nanoid";
+import ReadOnlyRow from "./ReadOnlyRow";
+import EditableRow from "./EditableRow";
 
 const baseUrl = "http://localhost:3000/inventory";
 
@@ -11,24 +13,23 @@ const InventoryAxiosTest = () => {
 
   const [editFormData, setEditFormData] = useState({
     product_name: "",
-    product_category: "",
     unit_price: "",
   });
 
   const [addFormData, setAddFormData] = useState({
     product_name: "",
-    product_category: "",
     unit_price: "",
   });
 
+  const [editProductId, setEditProductId] = useState();
+
   const handleAddFormChange = (event) => {
-    debugger;
     event.preventDefault();
 
     const fieldName = event.target.getAttribute("name");
     const fieldValue = event.target.value;
 
-    const newFormData = { ...addFormData };
+    const newFormData = { ...editFormData };
     newFormData[fieldName] = fieldValue;
 
     setAddFormData(newFormData);
@@ -40,9 +41,9 @@ const InventoryAxiosTest = () => {
 
     const newPost = {
       id: nanoid(),
-      product_name: addFormData.product_name,
-      product_category: addFormData.product_category,
-      unit_price: addFormData.unit_price,
+      product_name: editFormData.product_name,
+      product_category: editFormData.product_category,
+      unit_price: editFormData.unit_price,
     };
 
     addPost(newPost);
@@ -50,6 +51,49 @@ const InventoryAxiosTest = () => {
     const newPosts = [...post, newPost];
     console.log("Handling add form submit -> newPosts: ", newPosts);
     setPost(newPosts);
+  };
+
+  const handleEditClick = (event, product) => {
+    event.preventDefault();
+    setEditProductId(product.id);
+
+    const formValues = {
+      product_name: product.product_name,
+      unit_price: product.unit_price,
+    };
+
+    setEditFormData(formValues);
+  };
+
+  const handleEditFormChange = (event) => {
+    event.preventDefault();
+
+    const fieldName = event.target.getAttribute("name");
+    const fieldValue = event.target.value;
+
+    const newFormData = { ...editFormData };
+    newFormData[fieldName] = fieldValue;
+
+    setEditFormData(newFormData);
+  };
+
+  const handleEditFormSubmit = (event) => {
+    event.preventDefault();
+
+    const editedProduct = {
+      id: editProductId,
+      product_name: editFormData.product_name,
+      unit_price: editFormData.unit_price,
+    };
+
+    const newPoducts = [...post];
+
+    const index = post.findIndex((product) => product.id === editProductId);
+
+    newPoducts[index] = editedProduct;
+
+    setPost(newPoducts);
+    setEditProductId(null);
   };
 
   useEffect(() => {
@@ -137,6 +181,20 @@ const InventoryAxiosTest = () => {
     console.log("Retrieving this post => ", aPost);
   }
 
+  const handleCancelClick = () => {
+    setEditProductId(null);
+  };
+
+  const handleDeleteClick = (productId) => {
+    const newProducts = [...post];
+
+    const index = post.findIndex((prod) => prod.id === productId);
+
+    newProducts.splice(index, 1);
+
+    setPost(newProducts);
+  };
+
   return (
     <div className="container">
       <h1>{post.product_name}</h1>
@@ -145,40 +203,38 @@ const InventoryAxiosTest = () => {
       {/* <button onClick={createPost}>Create Post</button>
       <br></br> */}
       <h1>Toiletries</h1>
-      <table className="tbl-header">
-        <thead>
-          <tr>
-            <th>Product Name</th>
-            <th>Product Price</th>
-          </tr>
-        </thead>
-        <tbody>
-          {post.map((prod) => (
-            <tr key={prod.id}>
-              <td>{prod.product_name}</td>
-              <td>{prod.unit_price}</td>
-              <td>
-                <button
-                  onClick={() => {
-                    updatePost(prod.id);
-                  }}
-                >
-                  Change
-                </button>
-              </td>
-              <td>
-                <button
-                  onClick={() => {
-                    retrieveAPost(prod);
-                  }}
-                >
-                  Retrieve this post
-                </button>
-              </td>
+      <form onSubmit={handleEditFormSubmit}>
+        <table className="tbl-header">
+          <thead>
+            <tr>
+              <th>Product Name</th>
+              <th>Product Price</th>
+              <th>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {post.map((prod) => (
+              <Fragment>
+                {editProductId === prod.id ? (
+                  <EditableRow
+                    key={prod.id}
+                    editFormData={editFormData}
+                    handleEditFormChange={handleEditFormChange}
+                    handleCancelClick={handleCancelClick}
+                  />
+                ) : (
+                  <ReadOnlyRow
+                    key={prod.id}
+                    prod={prod}
+                    handleEditClick={handleEditClick}
+                    handleDeleteClick={handleDeleteClick}
+                  />
+                )}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </form>
       <br></br>
       <h2>Add a Product</h2>
       <button onClick={updateFirstPost}>Update 1st post</button>
